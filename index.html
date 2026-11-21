@@ -192,6 +192,49 @@ table.hm td.hm-total{ background:transparent; border:1px solid var(--line); }
 .lp-cols{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:28px; margin-top:24px; }
 @media (max-width:1100px){ .lp-cols{ grid-template-columns:1fr; } }
 .header-right a.theme-toggle{ text-decoration:none; }
+
+/* ---- Month analysis ---- */
+.ma-block{ margin:0 0 26px; padding:18px 18px 20px; border:1px solid var(--line); border-radius:12px; }
+.ma-title{ font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--ink-dim); font-weight:600; margin-bottom:14px; }
+.ma-title span{ color:var(--gold); text-transform:none; letter-spacing:0; margin-left:6px; }
+.ma-tiers{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+@media (max-width:900px){ .ma-tiers{ grid-template-columns:1fr; } }
+.ma-tier{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--panel-2); }
+.ma-tier.top{ border-color:var(--win); } .ma-tier.mid{ border-color:rgba(var(--gold-rgb),.75); } .ma-tier.low{ border-color:var(--loss); }
+.ma-tier-h{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; }
+.ma-tier-h .nm{ font-weight:700; font-size:13px; } .ma-tier-h .rule{ font-size:10.5px; color:var(--ink-dim); } .ma-tier-h .n{ margin-left:auto; font-size:20px; font-weight:700; }
+.ma-tier.top .nm, .ma-tier.top .n{ color:var(--win); } .ma-tier.mid .nm, .ma-tier.mid .n{ color:var(--gold); } .ma-tier.low .nm, .ma-tier.low .n{ color:var(--loss); }
+.ma-chip{ display:grid; grid-template-columns:64px minmax(0,1fr) 96px; gap:8px; align-items:center; padding:4px 0; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; font-size:11px; }
+.ma-chip .bar{ height:7px; border-radius:4px; background:rgba(127,127,127,.18); overflow:hidden; } .ma-chip .bar i{ display:block; height:100%; }
+.ma-tier.top .bar i{ background:var(--win); } .ma-tier.mid .bar i{ background:var(--gold); } .ma-tier.low .bar i{ background:var(--loss); }
+.ma-chip .ct{ text-align:right; color:var(--ink-dim); white-space:nowrap; }
+.ma-cols{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.5fr); gap:24px; margin-top:22px; }
+@media (max-width:1100px){ .ma-cols{ grid-template-columns:1fr; } }
+table.uq{ border-collapse:separate; border-spacing:3px; min-width:100%; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; font-size:11px; }
+table.uq th{ font-size:10px; font-weight:600; color:var(--ink-dim); padding:2px 4px; text-align:center; white-space:nowrap; }
+table.uq td.uq-fw{ text-align:left; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; font-size:11.5px; font-weight:600; white-space:nowrap; padding:0 8px 0 0; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+table.uq td.uq-c{ height:30px; min-width:46px; border-radius:6px; text-align:center; background:var(--panel-2); position:relative; color:var(--ink); }
+table.uq td.uq-c.sig{ outline:1.5px solid var(--gold); }
+table.uq td.uq-c b{ position:absolute; top:0; right:3px; font-size:9px; color:var(--gold); }
+table.uq td.uq-note{ text-align:left; font-size:10.5px; color:var(--ink-dim); min-width:190px; padding-left:8px; line-height:1.4; }
+/* ---- AM Framework comparison ---- */
+.cmp-cats{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:18px 0 6px; }
+@media (max-width:1000px){ .cmp-cats{ grid-template-columns:1fr; } }
+.cmp-cat{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--panel-2); }
+.cmp-cat.solo{ border-color:var(--win); } .cmp-cat.dep{ border-color:var(--loss); } .cmp-cat.share{ border-color:rgba(var(--gold-rgb),.75); }
+.cmp-h{ display:flex; align-items:baseline; margin-bottom:4px; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; }
+.cmp-h .nm{ font-weight:700; font-size:13px; } .cmp-h .n{ margin-left:auto; font-size:20px; font-weight:700; }
+.cmp-cat.solo .cmp-h{ color:var(--win); } .cmp-cat.dep .cmp-h{ color:var(--loss); } .cmp-cat.share .cmp-h{ color:var(--gold); }
+.cmp-item{ padding:8px 0; border-top:1px dashed var(--line); font-size:12px; }
+.cmp-item .nm{ display:flex; align-items:center; gap:7px; font-weight:600; min-width:0; }
+.cmp-item .nm .dot, .cmp-item .sub .dot{ width:9px; height:9px; border-radius:3px; flex:0 0 9px; display:inline-block; }
+.cmp-item .nm .t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmp-item .sub{ font-size:10.5px; color:var(--ink-dim); font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; margin-top:3px; line-height:1.55; }
+table.cmx{ border-collapse:separate; border-spacing:3px; min-width:100%; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; font-size:10.5px; }
+table.cmx th{ color:var(--ink-dim); font-weight:600; padding:2px 0; text-align:center; }
+table.cmx td.rl{ text-align:left; white-space:nowrap; max-width:230px; overflow:hidden; text-overflow:ellipsis; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; font-size:11px; padding-right:8px; }
+table.cmx td.cx, table.cmx td.dg{ height:30px; min-width:40px; text-align:center; border-radius:6px; background:var(--panel-2); color:var(--ink); }
+table.cmx td.dg{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); font-weight:700; }
 </style>
 </head>
 <body>
@@ -219,6 +262,15 @@ table.hm td.hm-total{ background:transparent; border:1px solid var(--line); }
       </div>
     </div>
     <div class="hm-kpis" id="hmKpis"></div>
+    <div class="ma-block">
+      <div class="ma-title">Month analysis · all data collected<span id="maNote"></span></div>
+      <div class="ma-tiers" id="maTiers"></div>
+      <div class="hm-foot">Tiers use each month's rounded % of logged days that carried a framework, across every keyed month and year. * month still in progress.</div>
+      <div class="ma-cols">
+        <div class="hm-box"><h4>Overall framework performance</h4><div id="maPerf"></div><div class="hm-foot">Days the framework appeared · % of all logged days. The bar and second % are its share of framework days; a day can carry two frameworks, so shares overlap.</div></div>
+        <div class="hm-box"><h4>Framework uniqueness by month</h4><div class="hm-scroll" id="maUniq"></div><div class="hm-foot">Cells = days the framework appeared that month, shaded by its share of the month's framework activity. ★ = signature month (needs 2+ days): where its share is highest versus its usual share.</div></div>
+      </div>
+    </div>
     <div class="hm-scales">
       <div>
         <div class="hm-scale-title">Probability scale</div>
@@ -249,6 +301,16 @@ table.hm td.hm-total{ background:transparent; border:1px solid var(--line); }
     </div>
   </div>
 
+
+  <div class="section-title">AM FRAMEWORK COMPARISON</div>
+  <div class="chart-panel lp-panel" id="cmpPanel">
+    <div class="hm-sub">How the AM frameworks relate to each other, using every day with a framework logged (all data; the heatmap toggle does not apply). <b>On its own</b>: it was the only framework on 60%+ of its days. <b>Depends on another</b>: 70%+ of its days include that other framework. <b>Shares</b>: it appears alongside others without leaning on one.</div>
+    <div class="cmp-cats" id="cmpCats"></div>
+    <div class="lp-cols">
+      <div class="hm-box"><h4>Most shared pairs</h4><div id="cmpPairs"></div><div class="hm-foot">Pairs seen together on at least 2 days. One-way = one framework nearly always comes with the other, not the reverse.</div></div>
+      <div class="hm-box"><h4>Co-occurrence matrix</h4><div class="hm-scroll" id="cmpMatrix"></div></div>
+    </div>
+  </div>
 
   <div class="footer-note">Synced from Notion · heatmap from Indices Log AM Framework · <a style="color:var(--gold)" href="https://munga068-ctrl.github.io/Playbook-/">Framework Ledger ↗</a></div>
 </div>
@@ -421,7 +483,6 @@ function renderKpis(M, S){
   const hot = best(keyedMo, +1);
   const hotFull = best(full, +1);
   const cold = best(full.length >= 2 ? full : keyedMo, -1);
-  const awaiting = S.mo.filter(m => !m.keyed && m.logged);
 
   let html = '';
   html += `<div class="hm-kpi"><div class="k-label">High-probability days</div>
@@ -442,9 +503,6 @@ function renderKpis(M, S){
       <div class="k-value">${labels(cold)} \u00b7 ${pct(c.rate)}</div>
       <div class="k-note">${c.hit} of ${c.logged} logged days \u00b7 fewest framework setups so far</div></div>`;
   }
-  html += `<div class="hm-kpi pending"><div class="k-label">Awaiting data</div>
-    <div class="k-value">${awaiting.length ? awaiting.length + ' month' + (awaiting.length === 1 ? '' : 's') : 'None'}</div>
-    <div class="k-note">${awaiting.length ? awaiting.map(m => monthLabel(m.key)).join(', ') + ' \u00b7 logged days, no framework recorded yet' : 'Every logged month has framework data'}</div></div>`;
   document.getElementById('hmKpis').innerHTML = html;
 }
 
@@ -648,6 +706,157 @@ function renderLow(M){
   }).join('') + '<div class="hm-foot">A day with two tags (e.g. CPI -1 and FOMC) counts in each row, but only once in the totals above.</div>';
 }
 
+// ---------------- Month analysis (all data; follows the low-probability toggle) ----------------
+function tierOf(p){ return p >= 60 ? 'top' : p >= 40 ? 'mid' : 'low'; }
+
+function buildMonthly(data, M){
+  const fws = M.fws, F = fws.length;
+  const dayMap = new Map(data.days.map(([d,l]) => [d,l]));
+  const keyedMonths = new Set();
+  data.days.forEach(([d,l]) => { if (l.some(i => !fws[i].neutral)) keyedMonths.add(d.slice(0,7)); });
+  const mo = new Map();
+  M.allDates.forEach(d => {
+    const k = d.slice(0,7);
+    if (!keyedMonths.has(k) || (hmHideLow && M.lowMap.has(d))) return;
+    if (!mo.has(k)) mo.set(k, { key:k, logged:0, hit:0, fw:new Array(F).fill(0) });
+    const x = mo.get(k), r = (dayMap.get(d) || []).filter(i => !fws[i].neutral);
+    x.logged++; if (r.length) x.hit++; r.forEach(i => x.fw[i]++);
+  });
+  const months = [...mo.values()].sort((a,b) => a.key < b.key ? -1 : 1);
+  const fwTotal = new Array(F).fill(0);
+  months.forEach(m => {
+    m.pct = Math.round(m.hit / m.logged * 100);
+    m.act = m.fw.reduce((a,b) => a + b, 0);
+    m.fw.forEach((n,i) => { fwTotal[i] += n; });
+  });
+  return { months, fwTotal, logged: months.reduce((a,m) => a + m.logged, 0), hit: months.reduce((a,m) => a + m.hit, 0), act: fwTotal.reduce((a,b) => a + b, 0) };
+}
+
+function renderMonthAnalysis(M){
+  const A = buildMonthly(hmData, M);
+  const nowKey = monthKey(new Date());
+  document.getElementById('maNote').textContent = hmHideLow ? ' \u00b7 low-probability days hidden' : '';
+  const tiers = [
+    { id:'top', title:'Top tier', rule:'60% and above' },
+    { id:'mid', title:'Mid tier', rule:'40% to 59%' },
+    { id:'low', title:'Low tier', rule:'below 40%' }
+  ];
+  document.getElementById('maTiers').innerHTML = tiers.map(t => {
+    const list = A.months.filter(m => tierOf(m.pct) === t.id).sort((a,b) => b.pct - a.pct || (a.key < b.key ? -1 : 1));
+    return `<div class="ma-tier ${t.id}"><div class="ma-tier-h"><span class="nm">${t.title}</span><span class="rule">${t.rule}</span><span class="n">${list.length}</span></div>` +
+      (list.length ? list.map(m => `<div class="ma-chip"><span class="lb">${monthLabel(m.key)}${m.key === nowKey ? '*' : ''}</span><span class="bar"><i style="width:${m.pct}%"></i></span><span class="ct">${m.hit}/${m.logged} \u00b7 ${m.pct}%</span></div>`).join('') : '<div class="hm-foot">No months in this tier.</div>') + '</div>';
+  }).join('');
+
+  const order = M.fws.filter(f => !f.neutral && A.fwTotal[f.idx] > 0)
+    .sort((a,b) => A.fwTotal[b.idx] - A.fwTotal[a.idx] || a.name.localeCompare(b.name));
+  const perf = document.getElementById('maPerf');
+  perf.innerHTML = order.length ? order.map((f,i) => {
+    const n = A.fwTotal[f.idx], act = A.months.filter(m => m.fw[f.idx] > 0).length;
+    return `<div class="top-fw${i < 3 ? ' top3' : ''}" data-i="${f.idx}" title="Click to isolate in the heatmap">
+      <div class="rank">${i+1}</div>
+      <div class="nm"><span class="dot" style="background:${f.color}"></span><span class="t">${esc(f.name)}</span></div>
+      <div class="ct">${n} day${n === 1 ? '' : 's'} \u00b7 ${pct(n / A.logged)}</div>
+      <div class="bar"><i style="width:${(n / A.hit * 100).toFixed(1)}%;background:${f.color}"></i></div>
+      <div class="meta2">${pct(n / A.hit)} of framework days \u00b7 active in ${act} of ${A.months.length} months</div></div>`;
+  }).join('') : '<div class="hm-foot">No frameworks logged yet.</div>';
+  perf.querySelectorAll('.top-fw').forEach(el => el.addEventListener('click', () => toggleSolo(+el.dataset.i)));
+
+  const uq = document.getElementById('maUniq');
+  if (!order.length || !A.months.length){ uq.innerHTML = '<div class="hm-foot">Not enough data yet.</div>'; return; }
+  let h = '<table class="uq"><thead><tr><th></th>' + A.months.map(m => `<th>${monthLabel(m.key)}</th>`).join('') + '<th>Uniqueness</th></tr></thead><tbody>';
+  order.forEach(f => {
+    const i = f.idx, shareAll = A.act ? A.fwTotal[i] / A.act : 0;
+    let sig = -1, sigLift = 0;
+    const cells = A.months.map((m,c) => {
+      const n = m.fw[i], share = m.act ? n / m.act : 0, lift = shareAll ? share / shareAll : 0;
+      if (n >= 2 && lift > sigLift){ sigLift = lift; sig = c; }
+      return { n, share, lift };
+    });
+    const active = cells.filter(x => x.n > 0).length;
+    let note;
+    if (active === 1){ const c = cells.findIndex(x => x.n > 0); note = `Only seen in ${monthLabel(A.months[c].key)} (${cells[c].n} day${cells[c].n === 1 ? '' : 's'})`; }
+    else if (sig >= 0 && sigLift >= 1.25) note = `Signature: ${monthLabel(A.months[sig].key)} \u00b7 ${cells[sig].n} days \u00b7 ${sigLift.toFixed(1)}\u00d7 its usual share`;
+    else note = 'Spread evenly \u00b7 no standout month';
+    const isSig = c => sig === c && sigLift >= 1.25;
+    h += `<tr><td class="uq-fw" title="${esc(f.name)}"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${f.color};margin-right:6px"></span>${esc(f.name)}</td>` +
+      cells.map((x,c) => `<td class="uq-c${isSig(c) ? ' sig' : ''}" style="${x.n ? 'background:rgba(var(--hm-rgb),' + (0.10 + 0.68 * Math.min(1, x.share / 0.5)).toFixed(2) + ')' : ''}" title="${esc(f.name)} \u00b7 ${monthLabel(A.months[c].key)}: ${x.n} day${x.n === 1 ? '' : 's'} \u00b7 ${pct(x.share)} of the month's framework activity${x.n ? ' \u00b7 ' + x.lift.toFixed(1) + '\u00d7 usual' : ''}">${x.n || '\u00b7'}${isSig(c) ? '<b>\u2605</b>' : ''}</td>`).join('') +
+      `<td class="uq-note">${note}</td></tr>`;
+  });
+  uq.innerHTML = h + '</tbody></table>';
+}
+
+// ---------------- AM Framework comparison (all data; ignores the low-probability toggle) ----------------
+const CMP_DEP = 0.7, CMP_SOLO = 0.6;
+function buildCmp(data, M){
+  const fws = M.fws, F = fws.length;
+  const lists = data.days.map(([d,l]) => l.filter(i => !fws[i].neutral)).filter(l => l.length);
+  const n = new Array(F).fill(0), solo = new Array(F).fill(0);
+  const co = fws.map(() => new Array(F).fill(0));
+  lists.forEach(l => l.forEach(a => { n[a]++; if (l.length === 1) solo[a]++; l.forEach(b => { if (a !== b) co[a][b]++; }); }));
+  const used = fws.filter(f => !f.neutral && n[f.idx] > 0).sort((a,b) => n[b.idx] - n[a.idx] || a.name.localeCompare(b.name));
+  const roles = used.map(f => {
+    const a = f.idx;
+    let dep = null;
+    used.forEach(g => {
+      if (g.idx === a) return;
+      const p = co[a][g.idx] / n[a];
+      if (p >= CMP_DEP && (!dep || p > dep.p)) dep = { g, p, s: co[a][g.idx], mutual: co[g.idx][a] / n[g.idx] >= CMP_DEP };
+    });
+    const soloR = solo[a] / n[a];
+    const partners = used.filter(g => g.idx !== a && co[a][g.idx] > 0).sort((x,y) => co[a][y.idx] - co[a][x.idx]).slice(0,3);
+    return { f, n:n[a], solo:solo[a], soloR, dep, partners, role: dep ? 'dep' : soloR >= CMP_SOLO ? 'solo' : 'share' };
+  });
+  return { n, solo, co, used, roles };
+}
+
+function renderCmp(M){
+  const cats = document.getElementById('cmpCats'), pairs = document.getElementById('cmpPairs'), mx = document.getElementById('cmpMatrix');
+  const C = buildCmp(hmData, M);
+  if (!C.used.length){ cats.innerHTML = '<div class="hm-foot">No frameworks logged yet.</div>'; pairs.innerHTML = ''; mx.innerHTML = ''; return; }
+  const dot = f => `<span class="dot" style="background:${f.color}"></span>`;
+  const small = n => n < 4 ? ' \u00b7 low sample' : '';
+  const item = (r, sub) => `<div class="cmp-item"><div class="nm">${dot(r.f)}<span class="t">${esc(r.f.name)}</span></div><div class="sub">${sub}</div></div>`;
+  const col = (id, title, note, items) => `<div class="cmp-cat ${id}"><div class="cmp-h"><span class="nm">${title}</span><span class="n">${items.length}</span></div><div class="hm-foot" style="margin:0 0 6px">${note}</div>${items.length ? items.join('') : '<div class="hm-foot">None yet.</div>'}</div>`;
+  const solos = C.roles.filter(r => r.role === 'solo').sort((a,b) => b.soloR - a.soloR || b.n - a.n)
+    .map(r => item(r, `${pct(r.soloR)} of its days alone (${r.solo}/${r.n})${small(r.n)}`));
+  const deps = C.roles.filter(r => r.role === 'dep').sort((a,b) => b.dep.p - a.dep.p || b.n - a.n)
+    .map(r => item(r, `leans on ${dot(r.dep.g)}${esc(r.dep.g.name)} \u00b7 ${pct(r.dep.p)} of its days (${r.dep.s}/${r.n})${r.dep.mutual ? ' \u00b7 inseparable pair' : ''}${small(r.n)}`));
+  const shares = C.roles.filter(r => r.role === 'share').sort((a,b) => b.n - a.n)
+    .map(r => item(r, `with ${r.partners.map(g => esc(g.name) + ' (' + C.co[r.f.idx][g.idx] + ')').join(' \u00b7 ')}${r.solo ? ' \u00b7 alone ' + pct(r.soloR) : ''}${small(r.n)}`));
+  cats.innerHTML =
+    col('solo', 'On its own', 'Usually the only framework on its day', solos) +
+    col('dep', 'Depends on another', 'Almost always shows up with one specific framework', deps) +
+    col('share', 'Shares with others', 'Appears alongside several frameworks', shares);
+
+  const prs = [];
+  C.used.forEach((a,x) => C.used.forEach((b,y) => { if (y > x && C.co[a.idx][b.idx] >= 2) prs.push({ a, b, s: C.co[a.idx][b.idx] }); }));
+  prs.sort((p,q) => q.s - p.s);
+  const maxS = prs.length ? prs[0].s : 1;
+  pairs.innerHTML = prs.length ? prs.slice(0,10).map(p => {
+    let a = p.a, b = p.b;
+    let pab = C.co[a.idx][b.idx] / C.n[a.idx], pba = C.co[b.idx][a.idx] / C.n[b.idx];
+    let tag = 'Shared', link = '+';
+    if (pab >= CMP_DEP && pba >= CMP_DEP) tag = 'Inseparable';
+    else if (pab >= CMP_DEP || pba >= CMP_DEP){ tag = 'One-way'; link = '\u2192'; if (pba >= CMP_DEP){ [a,b] = [b,a]; [pab,pba] = [pba,pab]; } }
+    return `<div class="top-fw" style="cursor:default">
+      <div class="rank">${p.s}</div>
+      <div class="nm">${dot(a)}<span class="t">${esc(a.name)} ${link} ${esc(b.name)}</span><span class="tag">${tag}</span></div>
+      <div class="ct">${p.s} days</div>
+      <div class="bar"><i style="width:${(p.s / maxS * 100).toFixed(1)}%;background:var(--gold)"></i></div>
+      <div class="meta2">first has second: ${pct(pab)} \u00b7 second has first: ${pct(pba)}</div></div>`;
+  }).join('') : '<div class="hm-foot">No pair has appeared together on 2+ days yet.</div>';
+
+  let h = '<table class="cmx"><thead><tr><th></th>' + C.used.map((f,i) => `<th title="${esc(f.name)}">${i+1}</th>`).join('') + '</tr></thead><tbody>';
+  C.used.forEach((a,i) => {
+    h += `<tr><td class="rl" title="${esc(a.name)}">${i+1} \u00b7 ${esc(a.name)}</td>` + C.used.map(b => {
+      if (a.idx === b.idx) return `<td class="dg" title="${esc(a.name)}: ${C.n[a.idx]} days">${C.n[a.idx]}</td>`;
+      const s = C.co[a.idx][b.idx], p = s / C.n[a.idx];
+      return `<td class="cx" style="${s ? 'background:rgba(var(--hm-rgb),' + (0.10 + 0.68 * p).toFixed(2) + ')' : ''}" title="${esc(a.name)} + ${esc(b.name)}: ${s} shared day${s === 1 ? '' : 's'} \u00b7 ${pct(p)} of ${esc(a.name)} days">${s ? pct(p) : '\u00b7'}</td>`;
+    }).join('') + '</tr>';
+  });
+  mx.innerHTML = h + '</tbody></table><div class="hm-foot">Read across: when the row framework appears, how often the column framework is also there. Diagonal = days the framework appeared.</div>';
+}
+
 function render(){
   const meta = document.getElementById('hmMeta');
   const M = buildModel(hmData, hmSolo);
@@ -660,6 +869,8 @@ function render(){
   renderTop(M, S);
   renderMonths(M, S);
   renderLow(M);
+  renderMonthAnalysis(M);
+  renderCmp(M);
   const tg = document.getElementById('hmLowToggle');
   tg.textContent = hmHideLow ? 'Low-prob days: hidden' : 'Low-prob days: shown';
   tg.classList.toggle('active', hmHideLow);
