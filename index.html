@@ -266,12 +266,12 @@ table.uq th.nodata{ opacity:.45; }
     </div>
     <div class="hm-kpis" id="hmKpis"></div>
     <div class="ma-block">
-      <div class="ma-title">Month analysis · all data collected<span id="maNote"></span></div>
+      <div class="ma-title">Month analysis · selected years<span id="maNote"></span></div>
       <div class="ma-tiers" id="maTiers"></div>
-      <div class="hm-foot">Tiers use each month's rounded % of logged days that carried a framework, across every keyed month and year. * month still in progress.</div>
+      <div class="hm-foot">Tiers use each month's rounded % of logged days that carried a framework, across the selected years (added together by calendar month when Combine years is on). * month still in progress.</div>
       <div class="ma-cols">
         <div class="hm-box"><h4>Overall framework performance</h4><div id="maPerf"></div><div class="hm-foot">Days the framework appeared · % of all logged days. The bar and second % are its share of framework days; a day can carry two frameworks, so shares overlap.</div></div>
-        <div class="hm-box"><h4>Framework uniqueness by month</h4><div class="hm-scroll" id="maUniq"></div><div class="hm-foot">Jan–Dec with every year added together. Cells = days the framework appeared in that calendar month, shaded by its share of the month's framework activity. ★ = signature month (2+ days, share at least 1.25× its usual share).</div></div>
+        <div class="hm-box"><h4>Framework uniqueness by month</h4><div class="hm-scroll" id="maUniq"></div><div class="hm-foot">Jan–Dec with the selected years added together. Cells = days the framework appeared in that calendar month, shaded by its share of the month's framework activity. ★ = signature month (2+ days, share at least 1.25× its usual share).</div></div>
       </div>
     </div>
     <div class="hm-yearbar" id="hmYearBar" style="display:none"></div>
@@ -282,7 +282,7 @@ table.uq th.nodata{ opacity:.45; }
         <div class="hm-grad-labels"><span>0%</span><span>50%</span><span>100%</span></div>
       </div>
       <div style="flex:1; min-width:300px;">
-        <div class="hm-scale-title">Framework scale · ranked by days visible · click one to isolate it</div>
+        <div class="hm-scale-title">Framework scale · ranked by days visible · click one or more to isolate them</div>
         <div class="hm-fw-scale" id="hmFwScale"></div>
       </div>
     </div>
@@ -368,7 +368,8 @@ const LP_BASES = ['FOMC','CPI','NFP','PPI'];
 const LP_KEY = 'mmtrades-hide-low';
 
 let hmData = AM_HEATMAP_EMBEDDED;
-let hmSolo = null; // framework index isolated by clicking a chip / top-framework row
+let hmSolo = []; // framework indexes isolated by clicking chips / list rows (several allowed)
+let hmSoloMode = 'any'; // 'any' = days with at least one selected framework, 'all' = days with all of them together
 let hmYears = null; // years selected for the heatmap; null = just the latest year until one is picked
 let hmCombine = false; // true = same month of every selected year is added together (plain Jan-Dec)
 const HM_COMBINE_KEY = 'mmtrades-hm-combine';
@@ -463,8 +464,11 @@ function buildModel(data, solo){
     const real = list.filter(i => !fws[i].neutral);
     const g = gcells[r][c]; g.logged++; if (real.length) g.hit++; real.forEach(i => g.fw[i]++);
     const x = cells[r][c];  x.logged++;
-    if (solo === null){ if (real.length) x.hit++; real.forEach(i => x.fw[i]++); }
-    else if (list.includes(solo)){ x.hit++; x.fw[solo]++; }
+    if (!solo.length){ if (real.length) x.hit++; real.forEach(i => x.fw[i]++); }
+    else {
+      const match = hmSoloMode === 'all' ? solo.every(i => list.includes(i)) : solo.some(i => list.includes(i));
+      if (match){ x.hit++; solo.forEach(i => { if (list.includes(i)) x.fw[i]++; }); }
+    }
   });
   return { fws, months, keyed, keyedFrom, cells, gcells, sel, years, combine, yearLabel: sel.join(' + '), generated:data.generated_at, lowMap, allDates };
 }
@@ -493,7 +497,7 @@ function buildStats(M){
   return { mo, fwTotal, fwDow, fwMon, hpTotal, keyedLogged, ranked, rankOf };
 }
 
-function toggleSolo(idx){ hmSolo = (hmSolo === idx) ? null : idx; render(); }
+function toggleSolo(idx){ const k = hmSolo.indexOf(idx); if (k >= 0) hmSolo.splice(k, 1); else hmSolo.push(idx); render(); }
 
 function renderKpis(M, S){
   const nowKey = nowColKey(M);
@@ -539,15 +543,22 @@ function renderScale(M, S){
     const n = S.fwTotal[f.idx], rk = S.rankOf.get(f.idx);
     const cls = ['hm-fw-chip'];
     if (!n) cls.push('unused');
-    if (hmSolo === f.idx) cls.push('active'); else if (hmSolo !== null) cls.push('dim');
+    if (hmSolo.includes(f.idx)) cls.push('active'); else if (hmSolo.length) cls.push('dim');
     return `<button type="button" class="${cls.join(' ')}" data-i="${f.idx}" title="${esc(f.name)}${n ? ' \u2014 ' + n + ' day' + (n===1?'':'s') : ' \u2014 not logged yet'}">
       <span class="sw" style="background:${f.color}"></span>
       ${rk ? `<span class="rk">#${rk}</span>` : '<span>\u2013</span>'}${esc(f.name)}${n ? ' \u00d7' + n : ''}</button>`;
   }).join('');
   wrap.querySelectorAll('.hm-fw-chip:not(.unused)').forEach(b => b.addEventListener('click', ()=> toggleSolo(+b.dataset.i)));
   const note = document.getElementById('hmSoloNote');
-  note.textContent = hmSolo === null ? '' :
-    `Showing only \u201c${M.fws[hmSolo].name}\u201d \u2014 cells show the days it appeared / logged days. Click it again to reset.`;
+  if (!hmSolo.length){ note.innerHTML = ''; }
+  else {
+    const names = hmSolo.map(i => '\u201c' + esc(M.fws[i].name) + '\u201d').join(', ');
+    note.innerHTML = `Isolated: ${names} \u2014 cells show ` + (hmSolo.length > 1
+      ? `days with <span class="seg-control" style="display:inline-flex;vertical-align:middle;margin:0 6px"><button class="seg-btn${hmSoloMode === 'any' ? ' active' : ''}" data-mode="any" type="button">any</button><button class="seg-btn${hmSoloMode === 'all' ? ' active' : ''}" data-mode="all" type="button">all together</button></span>of them`
+      : 'the days it appeared') + ' / logged days. <button class="chip-btn" type="button" id="hmSoloClear" style="margin-left:8px">Clear</button>';
+    note.querySelectorAll('.seg-btn').forEach(b => b.addEventListener('click', () => { hmSoloMode = b.dataset.mode; render(); }));
+    document.getElementById('hmSoloClear').addEventListener('click', () => { hmSolo = []; render(); });
+  }
 }
 
 function cellHtml(c, keyed, label, fws, solo, withMix){
@@ -558,14 +569,15 @@ function cellHtml(c, keyed, label, fws, solo, withMix){
   const total = c.fw.reduce((a,b)=>a+b,0);
   let mix = '';
   let tip = `${label}: ${c.hit} of ${c.logged} logged days (${pct(rate)})`;
-  if (solo === null){
+  if (!solo.length){
     const lines = c.fw.map((n,i)=> n ? `\u2022 ${fws[i].name} \u00d7${n}` : '').filter(Boolean);
     if (lines.length) tip += '\n' + lines.join('\n');
   }
   // bars only appear in the All / total row and column
   if (withMix){
-    if (solo !== null){
-      mix = `<div class="mix"><i style="width:${(rate*100).toFixed(0)}%;background:${fws[solo].color}"></i></div>`;
+    if (solo.length){
+      const sum = solo.reduce((a,i) => a + c.fw[i], 0);
+      mix = '<div class="mix">' + solo.map(i => c.fw[i] && sum ? `<i style="width:${(rate * 100 * c.fw[i] / sum).toFixed(1)}%;background:${fws[i].color}"></i>` : '').join('') + '</div>';
     } else if (total){
       mix = '<div class="mix">' + c.fw.map((n,i)=> n ? `<i style="width:${(n/total*100).toFixed(1)}%;background:${fws[i].color}"></i>` : '').join('') + '</div>';
     }
@@ -614,8 +626,8 @@ function renderTop(M, S){
     const n = S.fwTotal[f.idx];
     const bestDow = S.fwDow[f.idx].reduce((b,v,r)=> v > S.fwDow[f.idx][b] ? r : b, 0);
     const bestMon = S.fwMon[f.idx].reduce((b,v,c)=> v > S.fwMon[f.idx][b] ? c : b, 0);
-    const cls = ['top-fw']; if (i < 3) cls.push('top3'); if (hmSolo === f.idx) cls.push('active');
-    return `<div class="${cls.join(' ')}" data-i="${f.idx}" title="Click to isolate in the heatmap">
+    const cls = ['top-fw']; if (i < 3) cls.push('top3'); if (hmSolo.includes(f.idx)) cls.push('active');
+    return `<div class="${cls.join(' ')}" data-i="${f.idx}" title="Click to add or remove in the heatmap isolate">
       <div class="rank">${i+1}</div>
       <div class="nm"><span class="dot" style="background:${f.color}"></span><span class="t">${esc(f.name)}</span>${i < 3 ? '<span class="tag">Top ' + (i+1) + '</span>' : ''}</div>
       <div class="ct">${n} day${n===1?'':'s'} \u00b7 ${pct(n / S.hpTotal)}</div>
@@ -664,7 +676,7 @@ function renderYearToggle(M){
     M.years.map(y => `<button class="seg-btn${M.sel.includes(y) ? ' active' : ''}" type="button" data-year="${y}"${keyedYears.has(y) ? '' : ' style="opacity:.55" title="No framework data keyed in for ' + y + ' yet"'}>${y}</button>`).join('') + '</div>' +
     `<button class="chip-btn${M.sel.length === M.years.length ? ' active' : ''}" type="button" id="hmYearAll">All years</button>` +
     `<button class="chip-btn${M.combine ? ' active' : ''}" type="button" id="hmCombine" title="Add the same month of every selected year together, shown as plain Jan\u2013Dec">Combine years: ${M.combine ? 'on' : 'off'}</button>` +
-    '<span class="yb-note">Controls the KPI tiles above and the heatmap below \u00b7 Month analysis always uses all data</span>';
+    '<span class="yb-note">Controls the Month analysis above, the KPI tiles and the heatmap below</span>';
   wrap.querySelectorAll('.seg-btn').forEach(b => b.addEventListener('click', () => {
     const y = +b.dataset.year, cur = new Set(M.sel);
     if (cur.has(y)){ if (cur.size > 1) cur.delete(y); } else cur.add(y);
@@ -757,30 +769,30 @@ function buildMonthly(data, M){
   const dayMap = new Map(data.days.map(([d,l]) => [d,l]));
   const keyedMonths = new Set();
   data.days.forEach(([d,l]) => { if (l.some(i => !fws[i].neutral)) keyedMonths.add(d.slice(0,7)); });
-  const mo = new Map();
+  const inst = new Map();
   M.allDates.forEach(d => {
     const k = d.slice(0,7);
-    if (!keyedMonths.has(k) || (hmHideLow && M.lowMap.has(d))) return;
-    if (!mo.has(k)) mo.set(k, { key:k, logged:0, hit:0, fw:new Array(F).fill(0) });
-    const x = mo.get(k), r = (dayMap.get(d) || []).filter(i => !fws[i].neutral);
+    if (!M.sel.includes(+k.slice(0,4)) || !keyedMonths.has(k) || (hmHideLow && M.lowMap.has(d))) return;
+    if (!inst.has(k)) inst.set(k, { key:k, logged:0, hit:0, fw:new Array(F).fill(0) });
+    const x = inst.get(k), r = (dayMap.get(d) || []).filter(i => !fws[i].neutral);
     x.logged++; if (r.length) x.hit++; r.forEach(i => x.fw[i]++);
   });
-  const months = [...mo.values()].sort((a,b) => a.key < b.key ? -1 : 1);
+  const list = [...inst.values()].sort((a,b) => a.key < b.key ? -1 : 1);
+  // calendar months (Jan-Dec) with every selected year added together
+  const cal = Array.from({length:12}, (_,i) => ({ key:'M' + String(i+1).padStart(2,'0'), logged:0, hit:0, act:0, fw:new Array(F).fill(0) }));
+  list.forEach(m => { const c = +m.key.slice(5,7) - 1; cal[c].logged += m.logged; cal[c].hit += m.hit; m.fw.forEach((n,i) => { cal[c].fw[i] += n; }); });
+  cal.forEach(m => { m.act = m.fw.reduce((a,b) => a + b, 0); });
+  const months = M.combine ? cal.filter(m => m.logged) : list;
+  months.forEach(m => { m.pct = Math.round(m.hit / m.logged * 100); });
   const fwTotal = new Array(F).fill(0);
-  months.forEach(m => {
-    m.pct = Math.round(m.hit / m.logged * 100);
-    m.act = m.fw.reduce((a,b) => a + b, 0);
-    m.fw.forEach((n,i) => { fwTotal[i] += n; });
-  });
-  const cal = Array.from({length:12}, () => ({ act:0, fw:new Array(F).fill(0) }));
-  months.forEach(m => { const c = +m.key.slice(5,7) - 1; cal[c].act += m.act; m.fw.forEach((n,i) => { cal[c].fw[i] += n; }); });
-  return { months, fwTotal, cal, logged: months.reduce((a,m) => a + m.logged, 0), hit: months.reduce((a,m) => a + m.hit, 0), act: fwTotal.reduce((a,b) => a + b, 0) };
+  list.forEach(m => m.fw.forEach((n,i) => { fwTotal[i] += n; }));
+  return { months, fwTotal, cal, logged: list.reduce((a,m) => a + m.logged, 0), hit: list.reduce((a,m) => a + m.hit, 0), act: fwTotal.reduce((a,b) => a + b, 0) };
 }
 
 function renderMonthAnalysis(M){
   const A = buildMonthly(hmData, M);
-  const nowKey = monthKey(new Date());
-  document.getElementById('maNote').textContent = hmHideLow ? ' \u00b7 low-probability days hidden' : '';
+  const nowKey = nowColKey(M);
+  document.getElementById('maNote').textContent = ' \u00b7 ' + M.yearLabel + (M.combine ? ' \u00b7 years combined' : '') + (hmHideLow ? ' \u00b7 low-probability days hidden' : '');
   const tiers = [
     { id:'top', title:'Top tier', rule:'60% and above' },
     { id:'mid', title:'Mid tier', rule:'40% to 59%' },
@@ -797,7 +809,7 @@ function renderMonthAnalysis(M){
   const perf = document.getElementById('maPerf');
   perf.innerHTML = order.length ? order.map((f,i) => {
     const n = A.fwTotal[f.idx], act = A.months.filter(m => m.fw[f.idx] > 0).length;
-    return `<div class="top-fw${i < 3 ? ' top3' : ''}" data-i="${f.idx}" title="Click to isolate in the heatmap">
+    return `<div class="top-fw${i < 3 ? ' top3' : ''}" data-i="${f.idx}" title="Click to add or remove in the heatmap isolate">
       <div class="rank">${i+1}</div>
       <div class="nm"><span class="dot" style="background:${f.color}"></span><span class="t">${esc(f.name)}</span></div>
       <div class="ct">${n} day${n === 1 ? '' : 's'} \u00b7 ${pct(n / A.logged)}</div>
@@ -819,7 +831,7 @@ function renderMonthAnalysis(M){
     });
     const isSig = c => sig === c && sigLift >= 1.25;
     h += `<tr><td class="uq-fw" title="${esc(f.name)}"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${f.color};margin-right:6px"></span>${esc(f.name)}</td>` +
-      cells.map((x,c) => `<td class="uq-c${isSig(c) ? ' sig' : ''}" style="${x.n ? 'background:rgba(var(--hm-rgb),' + (0.10 + 0.68 * Math.min(1, x.share / 0.5)).toFixed(2) + ')' : ''}" title="${esc(f.name)} \u00b7 ${HM_MON[c]} (all years): ${x.n} day${x.n === 1 ? '' : 's'} \u00b7 ${pct(x.share)} of the month's framework activity${x.n ? ' \u00b7 ' + x.lift.toFixed(1) + '\u00d7 usual' : ''}">${x.n || '\u00b7'}${isSig(c) ? '<b>\u2605</b>' : ''}</td>`).join('') + '</tr>';
+      cells.map((x,c) => `<td class="uq-c${isSig(c) ? ' sig' : ''}" style="${x.n ? 'background:rgba(var(--hm-rgb),' + (0.10 + 0.68 * Math.min(1, x.share / 0.5)).toFixed(2) + ')' : ''}" title="${esc(f.name)} \u00b7 ${HM_MON[c]} (selected years): ${x.n} day${x.n === 1 ? '' : 's'} \u00b7 ${pct(x.share)} of the month's framework activity${x.n ? ' \u00b7 ' + x.lift.toFixed(1) + '\u00d7 usual' : ''}">${x.n || '\u00b7'}${isSig(c) ? '<b>\u2605</b>' : ''}</td>`).join('') + '</tr>';
   });
   uq.innerHTML = h + '</tbody></table>';
 }
