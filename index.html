@@ -360,14 +360,36 @@ const HM_COLOR_OVERRIDE = {
   '10AM H4 Retracement & Continuation':     '#b9a2ee', // light violet
   'Very Shallow Retracement Continuation':  '#e5383b', // red
   '10AM H4 Full Reversal [MMBM]':           '#3FC1C9',
-  '10AM H4 Full Reversal [MMSM]':           '#f6b26b'  // light orange
+  '10AM H4 Full Reversal [MMSM]':           '#f6b26b', // light orange
+  '10AM H4 Full Reversal [MMSM+MMBM]':      '#3FC1C9'  // merged sell + buy model
 };
 const HM_DOW = ['Mon','Tue','Wed','Thu','Fri'];
 const HM_MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const LP_BASES = ['FOMC','CPI','NFP','PPI'];
 const LP_KEY = 'mmtrades-hide-low';
 
-let hmData = AM_HEATMAP_EMBEDDED;
+// The 10AM H4 Full Reversal is one model logged as two (MMSM = sell model, MMBM = buy model).
+// They are merged into a single framework here, by name, so Notion and the sync JSON stay untouched
+// and the heatmap, month analysis and comparison all see one framework. Days are de-duplicated.
+const HM_MERGE_NAME = '10AM H4 Full Reversal [MMSM+MMBM]';
+const HM_MERGE_RE = /^10AM H4 Full Reversal\s*\[MM(?:SM|BM)\]$/i;
+function normalizeData(d){
+  const src = d.frameworks;
+  const isPart = src.map(f => HM_MERGE_RE.test(f.name));
+  if (!isPart.some(Boolean)) return d;
+  const map = new Map(), frameworks = [];
+  let merged = -1;
+  src.forEach((f,i) => {
+    if (isPart[i]){
+      if (merged < 0){ merged = frameworks.length; frameworks.push({ name: HM_MERGE_NAME }); }
+      map.set(i, merged);
+    } else { map.set(i, frameworks.length); frameworks.push(f); }
+  });
+  const days = d.days.map(([date, list]) => [date, [...new Set(list.map(i => map.get(i)))]]);
+  return Object.assign({}, d, { frameworks, days });
+}
+
+let hmData = normalizeData(AM_HEATMAP_EMBEDDED);
 let hmSolo = []; // framework indexes isolated by clicking chips / list rows (several allowed)
 let hmSoloMode = 'any'; // 'any' = days with at least one selected framework, 'all' = days with all of them together
 let hmYears = null; // years selected for the heatmap; null = just the latest year until one is picked
@@ -939,7 +961,7 @@ function loadHeatmap(){
   const tryNext = i => i >= AM_DATA_URLS.length ? Promise.resolve() :
     fetch(AM_DATA_URLS[i] + (AM_DATA_URLS[i].includes('?') ? '&' : '?') + 't=' + Date.now(), { cache:'no-store' })
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(d => { if (valid(d)) hmData = d; else throw new Error('bad shape'); })
+      .then(d => { if (valid(d)) hmData = normalizeData(d); else throw new Error('bad shape'); })
       .catch(() => tryNext(i + 1));
   return tryNext(0).then(render);
 }
