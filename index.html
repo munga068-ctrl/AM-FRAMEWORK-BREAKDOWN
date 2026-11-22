@@ -242,6 +242,7 @@ table.uq th.nodata{ opacity:.45; }
 #lpTags .mo-row{ grid-template-columns:104px minmax(0,1fr) 118px; }
 table.hm td.hm-cell{ position:relative; }
 .rally-badge{ position:absolute; top:3px; right:4px; min-width:14px; padding:0 4px; border-radius:7px; background:#f5b8cf; color:#5a1f35; font-size:9px; font-weight:700; line-height:14px; text-align:center; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; }
+:root{ --rally-rgb:245,184,207; }
 </style>
 </head>
 <body>
@@ -375,7 +376,7 @@ const LP_KEY = 'mmtrades-hide-low';
 // and the heatmap, month analysis and comparison all see one framework. Days are de-duplicated.
 const HM_MERGE_NAME = '10AM H4 Full Reversal [MMSM+MMBM]';
 const HM_MERGE_RE = /^10AM H4 Full Reversal\s*\[MM(?:SM|BM)\]$/i;
-const HM_RALLY_RE = /open\s*rally/i; // "10AM H4 Open Rally-No Entry": a measure, not a framework
+const HM_RALLY_RE = /open\s*rally\s*-?\s*no\s*entry/i; // "10AM H4 Open Rally-No Entry": a measure, not a framework
 const HM_RALLY = '#f5b8cf';          // light pink
 function normalizeData(d){
   const src = d.frameworks;
@@ -442,14 +443,15 @@ function lowMapOf(data, sorted){
   (data.events || []).forEach(([d, tags]) => {
     (Array.isArray(tags) ? tags : [tags]).forEach(t => {
       const u = String(t).toUpperCase(), key = u.replace(/[^A-Z0-9]/g, '');
-      const def = LP_TAGS.find(x => x.re.test(key));
-      if (!def) return;
-      if (/-1|BEFORE|\bPRE\b/.test(u)){ add(d, def.label + ' -1'); return; }
-      add(d, def.label);
-      if (!def.before) return;
-      let prev = null;
-      for (let i = sorted.length - 1; i >= 0; i--) if (sorted[i] < d){ prev = sorted[i]; break; }
-      if (prev && (parseD(d) - parseD(prev)) / 864e5 <= 4) add(prev, def.label + ' -1');
+      const isBefore = /-\s?1\b|\bBEFORE\b|\bPRE\b|\bEVE\b/.test(u);
+      LP_TAGS.filter(x => x.re.test(key)).forEach(def => {
+        if (isBefore){ add(d, def.label + ' -1'); return; }
+        add(d, def.label);
+        if (!def.before) return;
+        let prev = null;
+        for (let i = sorted.length - 1; i >= 0; i--) if (sorted[i] < d){ prev = sorted[i]; break; }
+        if (prev && (parseD(d) - parseD(prev)) / 864e5 <= 4) add(prev, def.label + ' -1');
+      });
     });
   });
   return m;
@@ -607,7 +609,8 @@ function cellHtml(c, keyed, label, fws, solo, withMix){
   if (!keyed) return `<td class="hm-cell nodata" title="${esc(label)}: no framework recorded yet">\u2014</td>`;
   if (!c.logged) return `<td class="hm-cell zero"><div class="v">\u2013</div></td>`;
   const rate = c.hit / c.logged;
-  const bg = c.hit ? `background:rgba(var(--hm-rgb),${(0.10 + 0.68*rate).toFixed(2)});` : '';
+  const pinkMode = solo.length > 0 && solo.every(i => fws[i].marker);
+  const bg = c.hit ? `background:rgba(var(${pinkMode ? '--rally-rgb' : '--hm-rgb'}),${(0.10 + 0.68*rate).toFixed(2)});` : '';
   const total = c.fw.reduce((a,b)=>a+b,0);
   let mix = '';
   let tip = `${label}: ${c.hit} of ${c.logged} logged days (${pct(rate)})`;
@@ -627,7 +630,7 @@ function cellHtml(c, keyed, label, fws, solo, withMix){
   const mf = fws.find(f => f.marker);
   if (c.mark && mf) tip += '\n\u25cf ' + mf.name + ' \u00d7' + c.mark;
   return `<td class="hm-cell${c.hit ? '' : ' zero'}" style="${bg}" title="${esc(tip).replace(/\n/g,'&#10;')}">
-    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}${c.mark ? `<span class="rally-badge">${c.mark}</span>` : ''}</td>`;
+    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}${c.mark && !pinkMode ? `<span class="rally-badge">${c.mark}</span>` : ''}</td>`;
 }
 
 function renderTable(M){
@@ -743,6 +746,7 @@ function buildLow(data, M){
   const keyedMonths = new Set();
   data.days.forEach(([d,l]) => { if (l.some(i => !fws[i].neutral)) keyedMonths.add(d.slice(0,7)); });
   const dates = M.allDates.filter(d => keyedMonths.has(d.slice(0,7)));
+  const outside = M.allDates.filter(d => !keyedMonths.has(d.slice(0,7)) && M.lowMap.has(d)).length;
   const mk = () => ({ days:0, hit:0, fw:new Array(fws.length).fill(0) });
   const low = mk(), norm = mk(), tags = new Map();
   dates.forEach(d => {
@@ -755,7 +759,7 @@ function buildLow(data, M){
       const x = tags.get(t); x.days++; if (r.length) x.hit++;
     });
   });
-  return { low, norm, tags, total: low.days + norm.days };
+  return { low, norm, tags, outside, total: low.days + norm.days };
 }
 
 function renderLow(M){
@@ -775,7 +779,7 @@ function renderLow(M){
   k.innerHTML =
     `<div class="hm-kpi low"><div class="k-label">Low-probability days</div>
       <div class="k-value">${L.low.days}</div>
-      <div class="k-note">${L.total ? pct(L.low.days / L.total) : '0%'} of ${L.total} logged days in keyed months</div></div>
+      <div class="k-note">${L.total ? pct(L.low.days / L.total) : '0%'} of ${L.total} logged days in months with framework data${L.outside ? ' \u00b7 ' + L.outside + ' more event days sit in earlier months with no framework data (not counted)' : ''}</div></div>
      <div class="hm-kpi"><div class="k-label">Low days with a framework</div>
       <div class="k-value">${L.low.hit}/${L.low.days} \u00b7 ${pct(lr)}</div>
       <div class="k-note">${L.low.days - L.low.hit} had no framework or NO FRAMEWORK AM</div></div>
