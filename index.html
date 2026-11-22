@@ -239,6 +239,9 @@ table.cmx td.dg{ background:transparent; border:1px solid var(--line); color:var
 .yb-label{ font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-dim); }
 .yb-note{ font-size:10.5px; color:var(--ink-dim); }
 table.uq th.nodata{ opacity:.45; }
+#lpTags .mo-row{ grid-template-columns:104px minmax(0,1fr) 118px; }
+table.hm td.hm-cell{ position:relative; }
+.rally-badge{ position:absolute; top:3px; right:4px; min-width:14px; padding:0 4px; border-radius:7px; background:#f5b8cf; color:#5a1f35; font-size:9px; font-weight:700; line-height:14px; text-align:center; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; }
 </style>
 </head>
 <body>
@@ -288,16 +291,16 @@ table.uq th.nodata{ opacity:.45; }
     </div>
     <div class="hm-solo-note" id="hmSoloNote"></div>
     <div class="hm-scroll"><table class="hm" id="hmTable"></table></div>
-    <div class="hm-foot">Each selected year shows 12 months; with Combine years on, the same month of every selected year is added together into one plain Jan–Dec set of columns. Dotted blank cells are months with no AM FRAMEWORK recorded yet. A month becomes active as soon as a framework is logged on any of its days.</div>
+    <div class="hm-foot">Each selected year shows 12 months; with Combine years on, the same month of every selected year is added together into one plain Jan–Dec set of columns. A pink badge in a cell counts the days logged with 10AM H4 Open Rally-No Entry. It is not a framework, so those days still count as days without one.</div>
     <div class="hm-lower">
       <div class="hm-box"><h4>Top frameworks visible on high-probability days</h4><div id="hmTop"></div></div>
       <div class="hm-box"><h4>Month by month</h4><div id="hmMonths"></div></div>
     </div>
   </div>
 
-  <div class="section-title">Low Probability Days · FOMC · CPI · NFP (+1 day before) · PPI</div>
+  <div class="section-title">Low Probability Days · FOMC · CPI · NFP (+1 day before) · PPI · J.HOLE · MIDTERMS · ELECTION</div>
   <div class="chart-panel lp-panel" id="lpPanel">
-    <div class="hm-sub">Low-probability days are FOMC, CPI and NFP days, the trading day before each, and PPI days (tagged in the Indices Log name). This card compares how often an AM framework appeared on those days against all other days. It covers every keyed month and ignores the heatmap's year selector and low-probability toggle.</div>
+    <div class="hm-sub">Low-probability days are FOMC, CPI and NFP days and the trading day before each, plus PPI, J.HOLE, MIDTERMS and ELECTION days (tagged in the Indices Log name). This card compares how often an AM framework appeared on those days against all other days. It covers every keyed month and ignores the heatmap's year selector and low-probability toggle.</div>
     <div class="hm-kpis" id="lpKpis"></div>
     <div class="lp-cols">
       <div class="hm-box"><h4>Frameworks seen on low-probability days</h4><div id="lpFw"></div></div>
@@ -365,7 +368,6 @@ const HM_COLOR_OVERRIDE = {
 };
 const HM_DOW = ['Mon','Tue','Wed','Thu','Fri'];
 const HM_MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const LP_BASES = ['FOMC','CPI','NFP','PPI'];
 const LP_KEY = 'mmtrades-hide-low';
 
 // The 10AM H4 Full Reversal is one model logged as two (MMSM = sell model, MMBM = buy model).
@@ -373,16 +375,22 @@ const LP_KEY = 'mmtrades-hide-low';
 // and the heatmap, month analysis and comparison all see one framework. Days are de-duplicated.
 const HM_MERGE_NAME = '10AM H4 Full Reversal [MMSM+MMBM]';
 const HM_MERGE_RE = /^10AM H4 Full Reversal\s*\[MM(?:SM|BM)\]$/i;
+const HM_RALLY_RE = /open\s*rally/i; // "10AM H4 Open Rally-No Entry": a measure, not a framework
+const HM_RALLY = '#f5b8cf';          // light pink
 function normalizeData(d){
   const src = d.frameworks;
   const isPart = src.map(f => HM_MERGE_RE.test(f.name));
-  if (!isPart.some(Boolean)) return d;
+  const isRally = src.map(f => HM_RALLY_RE.test(f.name));
+  if (!isPart.some(Boolean) && !isRally.some(Boolean)) return d;
   const map = new Map(), frameworks = [];
   let merged = -1;
   src.forEach((f,i) => {
     if (isPart[i]){
       if (merged < 0){ merged = frameworks.length; frameworks.push({ name: HM_MERGE_NAME }); }
       map.set(i, merged);
+    } else if (isRally[i]){
+      // neutral marker: shown in pink on the heatmap, but never counted as a framework day
+      map.set(i, frameworks.length); frameworks.push(Object.assign({}, f, { neutral:true, marker:true }));
     } else { map.set(i, frameworks.length); frameworks.push(f); }
   });
   const days = d.days.map(([date, list]) => [date, [...new Set(list.map(i => map.get(i)))]]);
@@ -416,31 +424,42 @@ function nowColKey(M){
 }
 function pct(x){ return Math.round(x * 100) + '%'; }
 
-// date -> Set of reasons ("FOMC", "FOMC -1", "CPI", "CPI -1", "NFP", "NFP -1", "PPI")
+// date -> Set of reasons ("FOMC", "FOMC -1", "PPI", "J.HOLE", ...).
+// Each entry is one low-probability event; before:true also makes the trading day before it low-probability.
+// To add another event type, add a line here (re matches the tag with punctuation and spaces removed).
+const LP_TAGS = [
+  { label:'FOMC',     re:/FOMC/,                  before:true  },
+  { label:'CPI',      re:/CPI/,                   before:true  },
+  { label:'NFP',      re:/NFP/,                   before:true  },
+  { label:'PPI',      re:/PPI/,                   before:false },
+  { label:'J.HOLE',   re:/JHOLE|JACKSONHOLE/,     before:false },
+  { label:'MIDTERMS', re:/MIDTERM/,               before:false },
+  { label:'ELECTION', re:/ELECTION/,              before:false }
+];
 function lowMapOf(data, sorted){
   const m = new Map();
   const add = (d, lab) => { if (!m.has(d)) m.set(d, new Set()); m.get(d).add(lab); };
   (data.events || []).forEach(([d, tags]) => {
     (Array.isArray(tags) ? tags : [tags]).forEach(t => {
-      const u = String(t).toUpperCase();
-      const base = LP_BASES.find(b => u.includes(b));
-      if (!base) return;
-      if (/-1|BEFORE|PRE/.test(u.replace(base, ''))){ add(d, base + ' -1'); return; }
-      add(d, base);
-      if (base === 'PPI') return; // PPI has no day-before
+      const u = String(t).toUpperCase(), key = u.replace(/[^A-Z0-9]/g, '');
+      const def = LP_TAGS.find(x => x.re.test(key));
+      if (!def) return;
+      if (/-1|BEFORE|\bPRE\b/.test(u)){ add(d, def.label + ' -1'); return; }
+      add(d, def.label);
+      if (!def.before) return;
       let prev = null;
       for (let i = sorted.length - 1; i >= 0; i--) if (sorted[i] < d){ prev = sorted[i]; break; }
-      if (prev && (parseD(d) - parseD(prev)) / 864e5 <= 4) add(prev, base + ' -1');
+      if (prev && (parseD(d) - parseD(prev)) / 864e5 <= 4) add(prev, def.label + ' -1');
     });
   });
   return m;
 }
 
 function buildModel(data, solo){
-  const fws = data.frameworks.map((f,i)=>({ name:f.name, neutral:!!f.neutral, idx:i }));
+  const fws = data.frameworks.map((f,i)=>({ name:f.name, neutral:!!f.neutral, marker:!!f.marker, idx:i }));
   let pi = 0;
   fws.forEach(f => {
-    if (f.neutral){ f.color = HM_NEUTRAL; return; }
+    if (f.neutral){ f.color = f.marker ? HM_RALLY : HM_NEUTRAL; return; }
     const p = HM_PALETTE[pi++ % HM_PALETTE.length];
     f.color = HM_COLOR_OVERRIDE[f.name] || p;
   });
@@ -477,15 +496,16 @@ function buildModel(data, solo){
   // low-probability toggle removes those days; combining only adds up months that actually have framework data
   const dates = allDates.filter(d => sel.includes(+d.slice(0,4)) && !(hmHideLow && lowMap.has(d)) && (!combine || fwMonths.has(d.slice(0,7))));
 
-  const mk = () => ({ logged:0, hit:0, fw:new Array(fws.length).fill(0) });
+  const mk = () => ({ logged:0, hit:0, mark:0, fw:new Array(fws.length).fill(0) });
   const cells  = HM_DOW.map(()=>months.map(mk)); // honours the isolate/solo filter
   const gcells = HM_DOW.map(()=>months.map(mk)); // always global; drives stats and rankings
   dates.forEach(d=>{
     const r = parseD(d).getDay() - 1, c = colOf(d);
     const list = dayMap.get(d) || [];
     const real = list.filter(i => !fws[i].neutral);
-    const g = gcells[r][c]; g.logged++; if (real.length) g.hit++; real.forEach(i => g.fw[i]++);
-    const x = cells[r][c];  x.logged++;
+    const hasMark = list.some(i => fws[i].marker);
+    const g = gcells[r][c]; if (hasMark) g.mark++; g.logged++; if (real.length) g.hit++; real.forEach(i => g.fw[i]++);
+    const x = cells[r][c];  x.logged++; if (hasMark) x.mark++;
     if (!solo.length){ if (real.length) x.hit++; real.forEach(i => x.fw[i]++); }
     else {
       const match = hmSoloMode === 'all' ? solo.every(i => list.includes(i)) : solo.some(i => list.includes(i));
@@ -507,16 +527,16 @@ function buildStats(M){
   const fwTotal = new Array(F).fill(0);
   const fwDow = M.fws.map(()=>new Array(R).fill(0));
   const fwMon = M.fws.map(()=>new Array(C).fill(0));
-  let hpTotal = 0, keyedLogged = 0;
+  let hpTotal = 0, keyedLogged = 0, markTotal = 0;
   for (let r = 0; r < R; r++) for (let c = 0; c < C; c++){
     if (!M.keyed[c]) continue;
-    const x = M.gcells[r][c]; hpTotal += x.hit; keyedLogged += x.logged;
+    const x = M.gcells[r][c]; hpTotal += x.hit; keyedLogged += x.logged; markTotal += x.mark;
     x.fw.forEach((n,i)=>{ fwTotal[i] += n; fwDow[i][r] += n; fwMon[i][c] += n; });
   }
   const ranked = M.fws.filter(f => !f.neutral && fwTotal[f.idx] > 0)
     .sort((a,b)=> fwTotal[b.idx] - fwTotal[a.idx] || a.name.localeCompare(b.name));
   const rankOf = new Map(ranked.map((f,i)=>[f.idx, i+1]));
-  return { mo, fwTotal, fwDow, fwMon, hpTotal, keyedLogged, ranked, rankOf };
+  return { mo, fwTotal, fwDow, fwMon, hpTotal, keyedLogged, markTotal, ranked, rankOf };
 }
 
 function toggleSolo(idx){ const k = hmSolo.indexOf(idx); if (k >= 0) hmSolo.splice(k, 1); else hmSolo.push(idx); render(); }
@@ -560,13 +580,13 @@ function renderKpis(M, S){
 
 function renderScale(M, S){
   const wrap = document.getElementById('hmFwScale');
-  const order = [...S.ranked, ...M.fws.filter(f => !S.rankOf.has(f.idx))];
+  const order = [...S.ranked, ...M.fws.filter(f => f.marker), ...M.fws.filter(f => !S.rankOf.has(f.idx) && !f.marker)];
   wrap.innerHTML = order.map(f=>{
-    const n = S.fwTotal[f.idx], rk = S.rankOf.get(f.idx);
+    const n = f.marker ? S.markTotal : S.fwTotal[f.idx], rk = S.rankOf.get(f.idx);
     const cls = ['hm-fw-chip'];
     if (!n) cls.push('unused');
     if (hmSolo.includes(f.idx)) cls.push('active'); else if (hmSolo.length) cls.push('dim');
-    return `<button type="button" class="${cls.join(' ')}" data-i="${f.idx}" title="${esc(f.name)}${n ? ' \u2014 ' + n + ' day' + (n===1?'':'s') : ' \u2014 not logged yet'}">
+    return `<button type="button" class="${cls.join(' ')}" data-i="${f.idx}" title="${esc(f.name)}${n ? ' \u2014 ' + n + ' day' + (n===1?'':'s') : ' \u2014 not logged yet'}${f.marker ? ' \u2014 not a framework, counts as a day without one' : ''}">
       <span class="sw" style="background:${f.color}"></span>
       ${rk ? `<span class="rk">#${rk}</span>` : '<span>\u2013</span>'}${esc(f.name)}${n ? ' \u00d7' + n : ''}</button>`;
   }).join('');
@@ -604,8 +624,10 @@ function cellHtml(c, keyed, label, fws, solo, withMix){
       mix = '<div class="mix">' + c.fw.map((n,i)=> n ? `<i style="width:${(n/total*100).toFixed(1)}%;background:${fws[i].color}"></i>` : '').join('') + '</div>';
     }
   }
+  const mf = fws.find(f => f.marker);
+  if (c.mark && mf) tip += '\n\u25cf ' + mf.name + ' \u00d7' + c.mark;
   return `<td class="hm-cell${c.hit ? '' : ' zero'}" style="${bg}" title="${esc(tip).replace(/\n/g,'&#10;')}">
-    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}</td>`;
+    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}${c.mark ? `<span class="rally-badge">${c.mark}</span>` : ''}</td>`;
 }
 
 function renderTable(M){
@@ -617,16 +639,16 @@ function renderTable(M){
   });
   h += '<th>All</th></tr></thead><tbody>';
 
-  const colAgg = M.months.map(()=>({logged:0, hit:0, fw:new Array(M.fws.length).fill(0)}));
-  const grand = {logged:0, hit:0, fw:new Array(M.fws.length).fill(0)};
+  const colAgg = M.months.map(()=>({logged:0, hit:0, mark:0, fw:new Array(M.fws.length).fill(0)}));
+  const grand = {logged:0, hit:0, mark:0, fw:new Array(M.fws.length).fill(0)};
   for (let r = 0; r < R; r++){
-    const rowAgg = {logged:0, hit:0, fw:new Array(M.fws.length).fill(0)};
+    const rowAgg = {logged:0, hit:0, mark:0, fw:new Array(M.fws.length).fill(0)};
     h += `<tr><th class="hm-row">${HM_DOW[r]}</th>`;
     for (let c = 0; c < C; c++){
       const x = M.cells[r][c];
       h += cellHtml(x, M.keyed[c], HM_DOW[r] + ' \u00b7 ' + monthLabel(M.months[c]), M.fws, hmSolo);
       if (M.keyed[c]){
-        [rowAgg, colAgg[c], grand].forEach(a => { a.logged += x.logged; a.hit += x.hit; x.fw.forEach((n,i)=>{ a.fw[i] += n; }); });
+        [rowAgg, colAgg[c], grand].forEach(a => { a.logged += x.logged; a.mark += x.mark; a.hit += x.hit; x.fw.forEach((n,i)=>{ a.fw[i] += n; }); });
       }
     }
     h += cellHtml(rowAgg, true, HM_DOW[r] + ' \u00b7 all keyed months', M.fws, hmSolo, true).replace('class="hm-cell', 'class="hm-total hm-cell') + '</tr>';
@@ -741,7 +763,7 @@ function renderLow(M){
   const fwBox = document.getElementById('lpFw');
   const tagBox = document.getElementById('lpTags');
   if (!(hmData.events || []).length){
-    k.innerHTML = '<div class="hm-foot">No event tags in the sync yet. Add an <b>events</b> field (date + FOMC / CPI / NFP / PPI tags from the Indices Log name) to am-frameworks.json and this card fills in automatically.</div>';
+    k.innerHTML = '<div class="hm-foot">No event tags in the sync yet. Add an <b>events</b> field (date + FOMC / CPI / NFP / PPI / J.HOLE / MIDTERMS / ELECTION tags from the Indices Log name) to am-frameworks.json and this card fills in automatically.</div>';
     fwBox.innerHTML = ''; tagBox.innerHTML = '';
     return;
   }
@@ -759,7 +781,7 @@ function renderLow(M){
       <div class="k-note">${L.low.days - L.low.hit} had no framework or NO FRAMEWORK AM</div></div>
      <div class="hm-kpi hot"><div class="k-label">Normal days with a framework</div>
       <div class="k-value">${L.norm.hit}/${L.norm.days} \u00b7 ${pct(nr)}</div>
-      <div class="k-note">Days with no FOMC / CPI / NFP / day-before / PPI</div></div>
+      <div class="k-note">Days with no low-probability event</div></div>
      <div class="hm-kpi"><div class="k-label">Normal vs low</div>
       <div class="k-value">${gap >= 0 ? '+' : ''}${gap} pts</div>
       <div class="k-note">${allHit ? pct(L.low.hit / allHit) : '0%'} of all high-probability days fell on a low-probability day</div></div>`;
@@ -775,7 +797,7 @@ function renderLow(M){
       <div class="meta2">On normal days: ${L.norm.fw[f.idx]}</div></div>`;
   }).join('') : '<div class="hm-foot">No framework appeared on a low-probability day.</div>';
 
-  const tagOrder = ['FOMC','FOMC -1','CPI','CPI -1','NFP','NFP -1','PPI'].filter(t => L.tags.has(t));
+  const tagOrder = LP_TAGS.flatMap(x => [x.label, x.label + ' -1']).filter(t => L.tags.has(t));
   tagBox.innerHTML = tagOrder.map(t => {
     const x = L.tags.get(t), r = x.days ? x.hit / x.days : 0;
     return `<div class="mo-row"><div class="lb">${t}</div><div class="bar"><i style="width:${(r*100).toFixed(0)}%"></i></div>
@@ -931,6 +953,7 @@ function renderCmp(M){
 }
 
 function render(){
+  hmSolo = hmSolo.filter(i => hmData.frameworks[i]); // drop isolated frameworks that vanished after a data refresh
   const meta = document.getElementById('hmMeta');
   const M = buildModel(hmData, hmSolo);
   if (!M){ meta.textContent = 'No logged days yet'; document.getElementById('hmYearBar').style.display = 'none'; return; }
