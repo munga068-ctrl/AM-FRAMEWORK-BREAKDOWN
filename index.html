@@ -241,8 +241,41 @@ table.cmx td.dg{ background:transparent; border:1px solid var(--line); color:var
 table.uq th.nodata{ opacity:.45; }
 #lpTags .mo-row{ grid-template-columns:104px minmax(0,1fr) 118px; }
 table.hm td.hm-cell{ position:relative; }
-.rally-badge{ position:absolute; top:3px; right:4px; min-width:14px; padding:0 4px; border-radius:7px; background:#f5b8cf; color:#5a1f35; font-size:9px; font-weight:700; line-height:14px; text-align:center; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; }
+
 :root{ --rally-rgb:245,184,207; }
+/* ---- layout safety + phone view ---- */
+.ma-cols > *, .lp-cols > *, .hm-lower > *, .cmp-cats > *, .ma-tiers > *, .hm-kpis > *{ min-width:0; }
+.hm-scroll{ max-width:100%; }
+table.uq td.uq-fw, table.cmx td.rl, table.hm th.hm-row{ position:sticky; left:0; z-index:2; background:var(--panel); }
+@media (max-width:700px){
+  body{ padding:14px 10px 40px; }
+  .brand{ font-size:20px; }
+  header{ padding-bottom:12px; margin-bottom:14px; }
+  .header-right{ flex-wrap:wrap; gap:8px; }
+  .chart-panel, .hm-panel, .lp-panel{ padding:14px 10px; }
+  .ma-block{ padding:12px 8px 14px; }
+  .section-title{ font-size:12px; letter-spacing:1px; margin:24px 0 10px; }
+  .hm-head-right{ align-items:flex-start; }
+  .hm-head-right .meta{ text-align:left; }
+  .hm-kpis{ grid-template-columns:1fr; gap:10px; }
+  .hm-kpi .k-value{ font-size:17px; }
+  .ma-chip{ grid-template-columns:52px minmax(0,1fr) 84px; gap:6px; font-size:10.5px; }
+  .top-fw{ grid-template-columns:22px minmax(0,1fr) auto; gap:5px 8px; padding:10px 10px 10px 4px; }
+  .top-fw .nm{ font-size:12px; }
+  .top-fw .ct{ font-size:11.5px; }
+  .mo-row{ grid-template-columns:62px minmax(0,1fr) 92px; gap:8px; font-size:10.5px; }
+  #lpTags .mo-row{ grid-template-columns:84px minmax(0,1fr) 92px; }
+  table.uq td.uq-fw{ max-width:112px; font-size:10.5px; }
+  table.uq td.uq-c{ min-width:34px; height:28px; }
+  table.cmx td.rl{ max-width:120px; font-size:10.5px; }
+  table.cmx td.cx, table.cmx td.dg{ min-width:34px; }
+  table.hm th.hm-row{ width:44px; padding-right:4px; }
+  .hm-yearbar{ gap:8px; }
+  .yb-note{ flex-basis:100%; }
+  .hm-scales{ gap:18px; }
+  .hm-grad{ width:100%; }
+  .hm-solo-note{ line-height:1.9; }
+}
 </style>
 </head>
 <body>
@@ -292,7 +325,7 @@ table.hm td.hm-cell{ position:relative; }
     </div>
     <div class="hm-solo-note" id="hmSoloNote"></div>
     <div class="hm-scroll"><table class="hm" id="hmTable"></table></div>
-    <div class="hm-foot">Each selected year shows 12 months; with Combine years on, the same month of every selected year is added together into one plain Jan–Dec set of columns. A pink badge in a cell counts the days logged with 10AM H4 Open Rally-No Entry. It is not a framework, so those days still count as days without one.</div>
+    <div class="hm-foot">Each selected year shows 12 months; with Combine years on, the same month of every selected year is added together into one plain Jan–Dec set of columns. Open Rally-No Entry is not a framework, so those days count as days without one; click its chip above to see them in pink.</div>
     <div class="hm-lower">
       <div class="hm-box"><h4>Top frameworks visible on high-probability days</h4><div id="hmTop"></div></div>
       <div class="hm-box"><h4>Month by month</h4><div id="hmMonths"></div></div>
@@ -630,7 +663,7 @@ function cellHtml(c, keyed, label, fws, solo, withMix){
   const mf = fws.find(f => f.marker);
   if (c.mark && mf) tip += '\n\u25cf ' + mf.name + ' \u00d7' + c.mark;
   return `<td class="hm-cell${c.hit ? '' : ' zero'}" style="${bg}" title="${esc(tip).replace(/\n/g,'&#10;')}">
-    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}${c.mark && !pinkMode ? `<span class="rally-badge">${c.mark}</span>` : ''}</td>`;
+    <div class="v">${c.hit}/${c.logged}</div><div class="s">${pct(rate)}</div>${mix}</td>`;
 }
 
 function renderTable(M){
